@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Baking App</string>
+    <string name="error_text">OOPS! some error occured ! </string>
+    <string name="previous_button_label">Previous </string>
+    <string name="next_button_label">Next </string>
+    <string name="ingredents_label">Ingredients </string>
+    <string name="appwidget_text">Add to widget</string>
+    <string name="appwidget_default_recipe_label">No Recipe added</string>
+    <string name="appwidget_default_ingredent">No ingredient to display</string>
+    <string name="add_to_widget_label">Add to Widget</string>
+</resources>

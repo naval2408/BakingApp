@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="yellowForWidget">#F0E68C</color>
+    <color name="lightBlueForWidget">#33FFFC</color>
+    <color name="lightGreenForWidget">#B2FF33</color>
+</resources>
