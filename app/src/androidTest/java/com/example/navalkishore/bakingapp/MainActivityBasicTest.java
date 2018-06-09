@@ -34,7 +34,6 @@ public class MainActivityBasicTest {
     @Test
     public void checkIfProgressBarHidden() {
         onView(withId(R.id.pb_loading_data_from_file)).check(ViewAssertions.matches(withEffectiveVisibility(ViewMatchers.Visibility.INVISIBLE)));
-        onView(withText("Brownies")).check(ViewAssertions.matches(isDisplayed()));
     }
 
     @Test
