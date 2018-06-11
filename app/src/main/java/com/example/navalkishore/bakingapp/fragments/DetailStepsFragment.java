@@ -1,5 +1,6 @@
 package com.example.navalkishore.bakingapp.fragments;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -53,17 +54,15 @@ public class DetailStepsFragment extends Fragment {
     TextView mStepDetail;
     Button mPreviousButton;
     Button mNextButton;
-    private boolean mediaPlaying = true;
-    private boolean mediaPaused = false;
-    private boolean exoPlayerInitilized;
     private ProgressBar mProgressBarForExoPlayer;
-    private long currentPosition;
     private Bundle parsableBundle;
     private ArrayList<Steps> mStepsList;
     private int currentPositionOfStep;
     private ButtonFunctionality buttonFunctionality;
     boolean isTablet;
-
+    private int currentWindow;
+    private boolean mediaReady = true;
+    private long currentPosition;
 
 
 
@@ -98,7 +97,7 @@ public class DetailStepsFragment extends Fragment {
          super.onCreateView(inflater, container, savedInstanceState);
         if(savedInstanceState != null) {
             currentPosition = savedInstanceState.getLong(BakingAppConstants.EXO_POSITION_KEY);
-            mediaPlaying = savedInstanceState.getBoolean(BakingAppConstants.EXO_PAUSED_KEY);
+            mediaReady = savedInstanceState.getBoolean(BakingAppConstants.EXO_PAUSED_KEY);
         }
         parsableBundle = getArguments().getBundle(BakingAppConstants.IntentConstants.PARCABLE_BUNDLE_FOR_STEPS);
         currentPositionOfStep = getArguments().getInt(BakingAppConstants.IntentConstants.CURRENT_POSITION_OF_STEPS);
@@ -134,19 +133,6 @@ public class DetailStepsFragment extends Fragment {
          mProgressBarForExoPlayer=(ProgressBar)rootView.findViewById(R.id.progressBarForExoPlayer);
          mSimpleExoPlayerView.setDefaultArtwork(BitmapFactory.decodeResource
                      (getResources(), R.drawable.q_mark));
-         if(currentSteps.getVideoURL()!=null&&(!currentSteps.getVideoURL().isEmpty()))
-         {
-             Uri videoURI = Uri.parse(currentSteps.getVideoURL());
-             initializePlayer(videoURI);
-
-
-         }
-         else {
-             mSimpleExoPlayerView.setVisibility(View.GONE);
-             mProgressBarForExoPlayer.setVisibility(View.GONE);
-
-         }
-
         if (mExoPlayer != null) {
             mExoPlayer.addListener(new ExoPlayer.EventListener() {
                 @Override
@@ -170,16 +156,6 @@ public class DetailStepsFragment extends Fragment {
                         mProgressBarForExoPlayer.setVisibility(View.VISIBLE);
                     } else {
                          mProgressBarForExoPlayer.setVisibility(View.INVISIBLE);
-                    }
-                    if (playWhenReady && playbackState == mExoPlayer.STATE_READY) {
-
-                        mediaPlaying = true;
-                    } else if (playWhenReady) {
-
-                    } else {
-                        if (!mediaPaused) {
-                            mediaPlaying = !mediaPlaying;
-                        }
                     }
 
                 }
@@ -205,22 +181,25 @@ public class DetailStepsFragment extends Fragment {
             LoadControl loadControl = new DefaultLoadControl();
             mExoPlayer = ExoPlayerFactory.newSimpleInstance(getActivity(), trackSelector, loadControl);
             mSimpleExoPlayerView.setPlayer(mExoPlayer);
-
+            mExoPlayer.setPlayWhenReady(mediaReady);
+            mExoPlayer.seekTo(currentWindow, currentPosition);
             String userAgent = Util.getUserAgent(getContext(), "BakingApp");
             MediaSource mediaSource = new ExtractorMediaSource(mediaUri, new DefaultDataSourceFactory(
                     getContext(), userAgent), new DefaultExtractorsFactory(), null, null);
+            mExoPlayer.prepare(mediaSource, true, false);
             mExoPlayer.prepare(mediaSource);
             if (currentPosition > 0l) {
                 mExoPlayer.seekTo(currentPosition);
             }
-            exoPlayerInitilized = true;
-            mExoPlayer.setPlayWhenReady(true);
+            mExoPlayer.setPlayWhenReady(mediaReady);
         }
     }
 
     private void releasePlayer() {
         if (mExoPlayer != null) {
-            mExoPlayer.stop();
+            currentPosition = mExoPlayer.getCurrentPosition();
+            currentWindow = mExoPlayer.getCurrentWindowIndex();
+            mediaReady = mExoPlayer.getPlayWhenReady();
             mExoPlayer.release();
             mExoPlayer = null;
         }
@@ -232,29 +211,72 @@ public class DetailStepsFragment extends Fragment {
         releasePlayer();
     }
 
+
+
     @Override
     public void onSaveInstanceState(Bundle outState) {
         if (mExoPlayer != null) {
             outState.putLong(BakingAppConstants.EXO_POSITION_KEY, mExoPlayer.getCurrentPosition());
-            outState.putBoolean(BakingAppConstants.EXO_PAUSED_KEY, mediaPlaying);
+            outState.putBoolean(BakingAppConstants.EXO_PAUSED_KEY, mExoPlayer.getPlayWhenReady());
         }
     }
 
+
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        if (Util.SDK_INT > 23) {
+                        if(currentSteps.getVideoURL()!=null&&(!currentSteps.getVideoURL().isEmpty()))
+            {
+
+                Uri videoURI = Uri.parse(currentSteps.getVideoURL());
+                initializePlayer(videoURI);
+
+
+            }
+            else {
+                mSimpleExoPlayerView.setVisibility(View.GONE);
+                mProgressBarForExoPlayer.setVisibility(View.GONE);
+
+            }
+        }
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
-        mediaPaused = false;
-        if (exoPlayerInitilized) {
-            mExoPlayer.setPlayWhenReady(mediaPlaying);
+        if ((Util.SDK_INT <= 23 || mExoPlayer == null)) {
+                        if(currentSteps.getVideoURL()!=null&&(!currentSteps.getVideoURL().isEmpty()))
+            {
+
+                Uri videoURI = Uri.parse(currentSteps.getVideoURL());
+                initializePlayer(videoURI);
+
+
+            }
+            else {
+                mSimpleExoPlayerView.setVisibility(View.GONE);
+                mProgressBarForExoPlayer.setVisibility(View.GONE);
+
+            }
+
         }
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        if (mExoPlayer != null) {
-            mExoPlayer.getCurrentPosition();
-            mediaPaused = true;
-            mExoPlayer.setPlayWhenReady(false);
+        if (Util.SDK_INT <= 23) {
+            releasePlayer();
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        if (Util.SDK_INT > 23) {
+            releasePlayer();
         }
     }
 
@@ -336,6 +358,7 @@ public class DetailStepsFragment extends Fragment {
             throw new RuntimeException(context.toString());
         }
     }
+
 
 
 
